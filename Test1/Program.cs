@@ -1,8 +1,6 @@
 ﻿//Будем распределять фишки с кучек выше среднего значения, начиная с тех, у кого соседняя кучка выше
 //в противоположном направлении. Если соседние кучки одинаковы - проверяем более удалённых соседей
-
 using System;
-using System.Collections.Generic;
 
 namespace Test1
 {   
@@ -12,10 +10,11 @@ namespace Test1
         static int ChipsPerPlayer = 0;
         static void Main()
         {
-            //int[] chips1 = new int[] { 1, 5, 9, 10, 5 };
-            int[] chips1 = new int[] { 0, 10, 0, 8, 3, 10, 7, 0, 9, 3 };
+            int[] chips1 = new int[] { 1, 5, 9, 10, 5 };
+            //int[] chips1 = new int[] { 7, 4, 7, 1, 12, 5 };
             int[] chips2 = new int[] { 1, 2, 3 };
             int[] chips3 = new int[] { 0, 1, 1, 1, 1, 1, 1, 1, 1, 2 };
+            int[] chips4 = new int[] { 0, 10, 0, 8, 3, 10, 7, 0, 9, 3 };
 
             СhipsToConsole(chips1);
             Console.WriteLine(HelpJose(chips1));
@@ -25,6 +24,9 @@ namespace Test1
 
             СhipsToConsole(chips3);
             Console.WriteLine(HelpJose(chips3));
+
+            СhipsToConsole(chips4);
+            Console.WriteLine(HelpJose(chips4));
         }
 
         static void СhipsToConsole(int[] Arr)
@@ -54,14 +56,12 @@ namespace Test1
                 IsDone = true;
                 LetsStep(ref Arr);
 
-
                 //foreach (var item in Arr)
                 //{
                 //    Console.Write(item + " ");
                 //}
 
                 //Console.WriteLine("- " + StepCount);
-
 
                 foreach (var Pile in Arr)
                 {
@@ -73,14 +73,15 @@ namespace Test1
                 }
             } while (!IsDone);
 
-
             return StepCount;
         }
 
         static void LetsStep(ref int[] Arr)
         {
             int IndexOfPile = -1;
-            
+            //В MaxNeighborSide мы будем запоминать с кокой стороны соседняя кучка оказалась выше, чтобы в последующих шагах проверять только одно направление
+            bool MaxNeighborSide = false;
+
             for (int i = 0; i < Arr.Length; i++)
             {
                 if (Arr[i] > ChipsPerPlayer)
@@ -90,9 +91,8 @@ namespace Test1
                     do
                     {
                         NextStep = false;
-                        int TopLeftNeighbor = IndexOfPile == -1 ? 0 : GetNeighbors(IndexOfPile, Step, Arr, false);
-                        int TopRightNeighbor = IndexOfPile == -1 ? 0 : GetNeighbors(IndexOfPile, Step, Arr, true);
-                        int TopMaxNeighbor = Math.Max(TopLeftNeighbor, TopRightNeighbor);
+                        //Смотрим какая кучка соседствовала с текушим фаворитом
+                        int TopMaxNeighbor = IndexOfPile == -1 ? 0 : GetNeighbors(IndexOfPile, Step, Arr, MaxNeighborSide);
 
                         int CurLeftNeighbor = GetNeighbors(i, Step, Arr, false);
                         int CurRightNeighbor = GetNeighbors(i, Step, Arr, true);
@@ -100,10 +100,16 @@ namespace Test1
                         if (CurMaxNeighbor > TopMaxNeighbor)
                         {
                             IndexOfPile = i;
+                            //Запомним с какой стороны соседняя кучка оказалась выше
+                            //пригодится, если будет больше одного шага сравнения
+                            MaxNeighborSide = (CurLeftNeighbor < CurRightNeighbor);
                         }
                         else if (CurMaxNeighbor == TopMaxNeighbor)
                         {
-                            if (Arr.Length / 2 > Step)
+                            if (Arr.Length / 2 <= Step)
+                            {
+
+                            } else
                             {
                                 Step++;
                                 NextStep = true;
@@ -188,20 +194,6 @@ namespace Test1
         /// <param name="MaxIndex"></param>
         /// <param name="ArrLenght"></param>
         /// <returns></returns>
-        //static bool GetDirection(int MinIndex, int MaxIndex, int ArrLenght)
-        //{
-        //    int d1, d2;
-        //    if (MinIndex > MaxIndex)
-        //    {
-        //        d1 = MinIndex - MaxIndex;
-        //        d2 = MaxIndex + ArrLenght - MinIndex; 
-        //    } else
-        //    {
-        //        d1 = ArrLenght - MaxIndex + MinIndex;
-        //        d2 = MaxIndex - MinIndex;
-        //    }
-        //    return (d1 < d2);
-        //}
 
         /// <summary>
         /// выясняем индекс ближайшей соседней кучки от самой маленьклй с количеством фишек > среднего
