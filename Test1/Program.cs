@@ -1,20 +1,24 @@
-﻿//Будем распределять фишки с кучек выше среднего значения, начиная с тех, у кого соседняя кучка выше
-//в противоположном направлении. Если соседние кучки одинаковы - проверяем более удалённых соседей
+﻿//Переосмыслил подход к задаче, ибо нет смысла смотреть только соседние кучки.
+//Всё стало намного проще. Находим кучку выше среднего и смотрим высоту соседних кучек на растоянии половины всех кучек
+//В какой стороне сумма высот меньше - туда и перекладываем
 using System;
 
 namespace Test1
 {   
     class Program
     {
+        //Показать решение
+        static bool ShowSolution = true;
         static int TotalChips = 0;
         static int ChipsPerPlayer = 0;
         static void Main()
         {
             int[] chips1 = new int[] { 1, 5, 9, 10, 5 };
-            //int[] chips1 = new int[] { 7, 4, 7, 1, 12, 5 };
+            //int[] chips1 = new int[] { 13, 8, 28, 21, 30, 6, 13, 27, 23, 1 };
             int[] chips2 = new int[] { 1, 2, 3 };
             int[] chips3 = new int[] { 0, 1, 1, 1, 1, 1, 1, 1, 1, 2 };
             int[] chips4 = new int[] { 0, 10, 0, 8, 3, 10, 7, 0, 9, 3 };
+            int[] chips5 = new int[] { 13, 8, 31, 17, 19, 18, 20, 17, 17, 10 };
 
             СhipsToConsole(chips1);
             Console.WriteLine(HelpJose(chips1));
@@ -27,6 +31,9 @@ namespace Test1
 
             СhipsToConsole(chips4);
             Console.WriteLine(HelpJose(chips4));
+
+            СhipsToConsole(chips5);
+            Console.WriteLine(HelpJose(chips5));
         }
 
         static void СhipsToConsole(int[] Arr)
@@ -56,12 +63,16 @@ namespace Test1
                 IsDone = true;
                 LetsStep(ref Arr);
 
-                //foreach (var item in Arr)
-                //{
-                //    Console.Write(item + " ");
-                //}
+                if (ShowSolution)
+                {
+                    foreach (var item in Arr)
+                    {
+                        Console.Write(item + " ");
+                    }
 
-                //Console.WriteLine("- " + StepCount);
+                    Console.WriteLine("- " + StepCount);
+                }
+                
 
                 foreach (var Pile in Arr)
                 {
@@ -78,90 +89,39 @@ namespace Test1
 
         static void LetsStep(ref int[] Arr)
         {
-            int IndexOfPile = -1;
-            //В MaxNeighborSide мы будем запоминать с кокой стороны соседняя кучка оказалась выше, чтобы в последующих шагах проверять только одно направление
-            bool MaxNeighborSide = false;
-
             for (int i = 0; i < Arr.Length; i++)
             {
                 if (Arr[i] > ChipsPerPlayer)
                 {
-                    int Step = 1;
-                    bool NextStep;
-                    do
+                    int CurLeftNeighbors = GetNeighborsWeight(i, Arr, false);
+                    int CurRightNeighbors = GetNeighborsWeight(i, Arr, true);
+
+                    
+                    if (CurLeftNeighbors > CurRightNeighbors)
                     {
-                        NextStep = false;
-                        //Смотрим какая кучка соседствовала с текушим фаворитом
-                        int TopMaxNeighbor = IndexOfPile == -1 ? 0 : GetNeighbors(IndexOfPile, Step, Arr, MaxNeighborSide);
-
-                        int CurLeftNeighbor = GetNeighbors(i, Step, Arr, false);
-                        int CurRightNeighbor = GetNeighbors(i, Step, Arr, true);
-                        int CurMaxNeighbor = Math.Max(CurLeftNeighbor, CurRightNeighbor);
-                        if (CurMaxNeighbor > TopMaxNeighbor)
-                        {
-                            IndexOfPile = i;
-                            //Запомним с какой стороны соседняя кучка оказалась выше
-                            //пригодится, если будет больше одного шага сравнения
-                            MaxNeighborSide = (CurLeftNeighbor < CurRightNeighbor);
-                        }
-                        else if (CurMaxNeighbor == TopMaxNeighbor)
-                        {
-                            if (Arr.Length / 2 <= Step)
-                            {
-
-                            } else
-                            {
-                                Step++;
-                                NextStep = true;
-                            }
-
-                        }
-                    } while (NextStep);
-                }
-            }
-            bool Direction = GetDirection(IndexOfPile, Arr);
-            Arr[IndexOfPile]--;
-            Arr[GetCircleIndex(IndexOfPile, Direction, 1, Arr.Length)]++;
-        }
-
-        static bool GetDirection(int Index, int[] Arr)
-        {
-            int Step = 1;
-            bool NextStep;
-            bool Result = true;
-            do
-            {
-                NextStep = false;
-                int LeftNeighbor = GetNeighbors(Index, Step, Arr, false);
-                int RightNeighbor = GetNeighbors(Index, Step, Arr, true);
-                if (LeftNeighbor > RightNeighbor)
-                {
-                    Result = true;
-                } else if (LeftNeighbor < RightNeighbor)
-                {
-                    Result = false;
-                } else
-                {
-                    //во избежание ситуации, когда соседние кучки на любом растоянии равны, контролируем длинну шага
-                    //в таком случае нет разницы переклажывать слева или справа
-                    if (Arr.Length / 2 <= Step)
-                    {
-                        Result = true;
+                        Arr[i]--;
+                        Arr[GetCircleIndex(i, true, 1, Arr.Length)]++;
+                        break;
                     }
                     else
                     {
-                        Step++;
-                        NextStep = true;
+                        Arr[i]--;
+                        Arr[GetCircleIndex(i, false, 1, Arr.Length)]++;
+                        break;
                     }
                 }
-            } while (NextStep);
-
-            return Result;
+            }
         }
-
-        static int GetNeighbors(int Index, int Step, int[] Arr, bool Side)
+        
+        //Взвешиваем соседей с указанной стороны
+        static int GetNeighborsWeight(int Index, int[] Arr, bool Side)
         {
-            return Arr[GetCircleIndex(Index, Side, Step, Arr.Length)];
+            int Weight = 0;
+            for (int i = 0; i < Arr.Length / 2; i++)
+            {
+                Weight += Arr[GetCircleIndex(Index, Side, i + 1, Arr.Length)];
+            }
+            return Weight;
         }
 
         /// <summary>
@@ -187,87 +147,5 @@ namespace Test1
             return Result;
         }
 
-        /// <summary>
-        /// определяем ближайшее направление от большей кучки к меньшей
-        /// </summary>
-        /// <param name="MinIndex"></param>
-        /// <param name="MaxIndex"></param>
-        /// <param name="ArrLenght"></param>
-        /// <returns></returns>
-
-        /// <summary>
-        /// выясняем индекс ближайшей соседней кучки от самой маленьклй с количеством фишек > среднего
-        /// </summary>
-        /// <param name="arr"></param>
-        /// <returns></returns>
-        static int GetSourceIndex(int DestIndex, int[] arr)
-        {
-            int Result = -1;
-            //поверяем ближайшие соседние кучки
-            int Step = 1;
-            bool NextDoorNeeded;
-            do
-            {
-                NextDoorNeeded = false;
-                //кучка слева
-                int slIndex = GetCircleIndex(DestIndex, false, Step, arr.Length);
-                int sl = arr[slIndex];
-                //кучка справа
-                int srIndex = GetCircleIndex(DestIndex, true, Step, arr.Length);
-                int sr = arr[srIndex];
-
-                СhipsToConsole(arr);
-
-                if (Math.Max(sl, sr) > ChipsPerPlayer)
-                {
-                    if (sl > sr)
-                    {
-                        Result = slIndex;
-                    } else if (sl < sr)
-                    {
-                        Result = srIndex;
-                    } else //если ближайшие соседние кучки равны, смотрим более удалённые
-                    {
-                        //во избежание ситуации, когда соседние кучки на любом растоянии равны, контролируем длинну шага
-                        //в таком случае нет разницы переклажывать слева или справа
-                        if (arr.Length / 2 <= Step)
-                        {
-                            Result = slIndex;
-                        } else
-                        {
-                            Step++;
-                            NextDoorNeeded = true;
-                        }
-                    }
-                }
-                else //если обе соседние кучки <= среднему значению, смотрим более удалённые
-                {
-                    Step++;
-                    NextDoorNeeded = true;
-                }
-            } while (NextDoorNeeded);
-
-            return Result;
-        }
-
-        /// <summary>
-        /// выясняем индекс минимальной кучки
-        /// </summary>
-        /// <param name="arr"></param>
-        /// <returns></returns>
-        static int GetDestIndex(int[] arr)
-        {
-            int MinValue = int.MaxValue;
-            int Result = -1;
-            for (int i = 0; i < arr.Length; i++)
-            {
-                if (MinValue > arr[i])
-                {
-                    MinValue = arr[i];
-                    Result = i;
-                }
-            }
-            return Result;
-        }
     }
 }
