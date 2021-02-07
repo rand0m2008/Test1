@@ -1,24 +1,18 @@
-﻿//Переосмыслил подход к задаче, ибо нет смысла смотреть только соседние кучки.
-//Всё стало намного проще. Находим кучку выше среднего и смотрим высоту соседних кучек на растоянии половины всех кучек
-//В какой стороне сумма высот меньше - туда и перекладываем
-using System;
+﻿using System;
 
 namespace Test1
 {   
     class Program
     {
-        //Показать решение
-        static bool ShowSolution = true;
         static int TotalChips = 0;
         static int ChipsPerPlayer = 0;
         static void Main()
         {
-            int[] chips1 = new int[] { 1, 5, 9, 10, 5 };
-            //int[] chips1 = new int[] { 13, 8, 28, 21, 30, 6, 13, 27, 23, 1 };
-            int[] chips2 = new int[] { 1, 2, 3 };
-            int[] chips3 = new int[] { 0, 1, 1, 1, 1, 1, 1, 1, 1, 2 };
-            int[] chips4 = new int[] { 0, 10, 0, 8, 3, 10, 7, 0, 9, 3 };
-            int[] chips5 = new int[] { 13, 8, 31, 17, 19, 18, 20, 17, 17, 10 };
+            int[] chips1 = new int[] { 1, 5, 9, 10, 5 }; //12
+            int[] chips2 = new int[] { 1, 2, 3 }; //1
+            int[] chips3 = new int[] { 0, 1, 1, 1, 1, 1, 1, 1, 1, 2 }; //1
+            int[] chips4 = new int[] { 0, 10, 0, 8, 3, 10, 7, 0, 9, 3 }; 
+            int[] chips5 = new int[] { 13, 8, 28, 21, 30, 6, 13, 27, 23, 1 };
 
             СhipsToConsole(chips1);
             Console.WriteLine(HelpJose(chips1));
@@ -48,7 +42,6 @@ namespace Test1
 
         static int HelpJose(int[] Arr)
         {
-            int StepCount = 0;
             TotalChips = 0;
             foreach (var c in Arr)
             {
@@ -56,72 +49,34 @@ namespace Test1
             }
             ChipsPerPlayer = TotalChips / Arr.Length;
 
-            bool IsDone;
-            do
+            //Будем начинать с каждой кучки, после выберем лучший результат
+            int MinMove = int.MaxValue;
+            int[] ArrCopy = new int[Arr.Length];
+            for (int Iter = 0; Iter < Arr.Length; Iter++)
             {
-                StepCount++;
-                IsDone = true;
-                LetsStep(ref Arr);
-
-                if (ShowSolution)
+                Arr.CopyTo(ArrCopy, 0);
+                int ItreMoveCount = 0;
+                for (int i = 0; i < Arr.Length; i++)
                 {
-                    foreach (var item in Arr)
+                    int CurIndex = Iter + i;
+                    //Считаем сколько не хватает данной кучке для баланса
+                    if (ArrCopy[CurIndex % ArrCopy.Length] > ChipsPerPlayer) {
+                        int CurMove = ArrCopy[CurIndex % ArrCopy.Length] - ChipsPerPlayer;
+                        ArrCopy[CurIndex % ArrCopy.Length] -= CurMove;
+                        ArrCopy[(CurIndex + 1) % ArrCopy.Length] += CurMove;
+                        ItreMoveCount += CurMove;
+                    } else if (ArrCopy[CurIndex % ArrCopy.Length] < ChipsPerPlayer)
                     {
-                        Console.Write(item + " ");
-                    }
-
-                    Console.WriteLine("- " + StepCount);
+                        int CurMove = ChipsPerPlayer - ArrCopy[CurIndex % ArrCopy.Length];
+                        ArrCopy[CurIndex % ArrCopy.Length] += CurMove;
+                        ArrCopy[GetCircleIndex(CurIndex, true, 1, ArrCopy.Length)] -= CurMove;
+                        ItreMoveCount += CurMove;
+                    } 
                 }
-                
-
-                foreach (var Pile in Arr)
-                {
-                    if (Pile != ChipsPerPlayer)
-                    {
-                        IsDone = false;
-                        break;
-                    }
-                }
-            } while (!IsDone);
-
-            return StepCount;
-        }
-
-        static void LetsStep(ref int[] Arr)
-        {
-            for (int i = 0; i < Arr.Length; i++)
-            {
-                if (Arr[i] > ChipsPerPlayer)
-                {
-                    int CurLeftNeighbors = GetNeighborsWeight(i, Arr, false);
-                    int CurRightNeighbors = GetNeighborsWeight(i, Arr, true);
-
-                    
-                    if (CurLeftNeighbors > CurRightNeighbors)
-                    {
-                        Arr[i]--;
-                        Arr[GetCircleIndex(i, true, 1, Arr.Length)]++;
-                        break;
-                    }
-                    else
-                    {
-                        Arr[i]--;
-                        Arr[GetCircleIndex(i, false, 1, Arr.Length)]++;
-                        break;
-                    }
-                }
+                if (ItreMoveCount < MinMove) MinMove = ItreMoveCount;
             }
-        }
-        
-        //Взвешиваем соседей с указанной стороны
-        static int GetNeighborsWeight(int Index, int[] Arr, bool Side)
-        {
-            int Weight = 0;
-            for (int i = 0; i < Arr.Length / 2; i++)
-            {
-                Weight += Arr[GetCircleIndex(Index, Side, i + 1, Arr.Length)];
-            }
-            return Weight;
+
+            return MinMove;
         }
 
         /// <summary>
